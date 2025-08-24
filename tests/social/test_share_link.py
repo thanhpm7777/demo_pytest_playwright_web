@@ -5,7 +5,6 @@ from pages.post_page import PostPage
 
 @pytest.mark.ui
 @pytest.mark.social
-@pytest.mark.smoke
 @allure.feature("Social")
 @allure.story("Like & Share")
 def test_like_toggle_and_share_link(context_with_auth):

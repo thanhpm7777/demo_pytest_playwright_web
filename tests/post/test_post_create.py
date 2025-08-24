@@ -4,7 +4,6 @@ from pages.post_page import PostPage
 
 @pytest.mark.ui
 @pytest.mark.post
-@pytest.mark.smoke
 @allure.feature("Post")
 @allure.story("Create")
 def test_create_post_valid(context_with_auth, test_posts):
