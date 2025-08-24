@@ -6,90 +6,104 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 5"   # 9h sáng thứ 6 (giờ VN)
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-ui-tests-${{ github.ref }}
+  group: ci-web-e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
-
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-
-      - name: Install dependencies & Playwright
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
-
-      - name: Create .env from secrets
-        run: |
-          {
-            echo "BASE_URL=${{ secrets.BASE_URL }}"
-            echo "USER_EMAIL=${{ secrets.USER_EMAIL }}"
-            echo "USER_PASSWORD=${{ secrets.USER_PASSWORD }}"
-            echo "PW_BROWSER=chromium"
-            echo "PW_HEADLESS=true"
-            echo "PW_TIMEOUT=10000"
-            echo "RECORD_VIDEO=false"
-          } >> .env
-
-      # (khuyến nghị) Bật trace/video/screenshot khi fail
-      - name: Prepare Playwright artifacts folder
-        run: mkdir -p artifacts
-
+      - name: Install Playwright browsers (Python)
+        run: python -m playwright install --with-deps chromium
       - name: Run tests (pytest + Allure results)
         env:
-          # bạn có thể đọc các biến này trong code nếu cần
-          PYTEST_ADDOPTS: "-q -m ui --alluredir=allure-results --maxfail=1"
-        run: |
-          pytest
-
-      # Build HTML Allure
-      - name: Install Allure CLI
-        run: |
-          npm i -g allure-commandline --no-audit --no-fund
-
-      - name: Generate Allure HTML report
-        if: always()
-        run: |
-          allure generate allure-results -o allure-report --clean
-
-      # Upload raw results + HTML để tải về xem
+          BASE_URL: ${{ secrets.BASE_URL }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+          HEADLESS: 'true'
+          BROWSER: 'chromium'
+        run: pytest -m smoke --alluredir=allure-results --tb=short -v
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure-artifacts
+          path: |
+            test-results/
+            screenshots/
+            videos/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload Allure results (raw)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
-          retention-days: 7
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Upload Allure HTML (downloadable)
-        if: always()
+  report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download allure-results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+      - name: Setup Java (Allure CLI)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Install Allure CLI
+        run: npm i -g allure-commandline@2.24.1
+      - name: Generate Allure HTML report
+        run: |
+          allure generate allure-results -o allure-report --clean
+          echo "# Test Report" > allure-report/README.md
+          echo "Generated: $(date)" >> allure-report/README.md
+          echo "Workflow: ${{ github.workflow }}" >> allure-report/README.md
+          echo "Run ID: ${{ github.run_id }}" >> allure-report/README.md
+      - name: Upload Allure HTML (artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
+          name: allure-report-html
           path: allure-report
-          retention-days: 7
+          if-no-files-found: error
+          retention-days: 30
 
-      # (tuỳ chọn) Upload video/trace/screenshot nếu bạn lưu ra ./artifacts
-      - name: Upload Playwright artifacts
-        if: failure() || cancelled()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pw-artifacts
-          path: artifacts
-          retention-days: 7
+  notify:
+    needs: [test, report]
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Summary (tests failed)
+        if: needs.test.result == 'failure'
+        run: |
+          echo "::error title=E2E Tests Failed::Tests failed on main. Download 'allure-report-html' artifact in this run to view the report."
+      - name: Summary (tests passed)
+        if: needs.test.result == 'success'
+        run: |
+          echo "::notice title=E2E Tests Passed::All tests passed. Download 'allure-report-html' artifact in this run to view the report."
