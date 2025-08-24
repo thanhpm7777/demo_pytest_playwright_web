@@ -1,0 +1,4 @@
+{
+  "valid": { "title": "Hello World", "content": "This is my first post." },
+  "update": { "new_title": "Updated Title" }
+}
