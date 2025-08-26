@@ -23,11 +23,9 @@ class BasePage:
     def toast_should_appear(self, text: str):
         expect(self.page.get_by_text(text)).to_be_visible()
     # =========================
+
     def open(self, path: str = "", wait_until: str = "domcontentloaded"):
-        """
-        Điều hướng tới BASE_URL (+ path nếu có).
-        Hỗ trợ BASE_URL có hash routing (#/).
-        """
+
         base = settings.BASE_URL
         if path:
             if base.endswith("/") and path.startswith("/"):

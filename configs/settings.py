@@ -3,21 +3,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    BASE_URL: str = "https://hocvancokimngan.com/"
-    USER_EMAIL: str = ""
-    USER_PASSWORD: str = ""
+    BASE_URL: str
+    USER_EMAIL: str
+    USER_PASSWORD: str
 
-    PW_BROWSER: str = "chromium"
-    PW_HEADLESS: bool = False
-    PW_TIMEOUT: int = 10_000
-    RECORD_VIDEO: bool = False
+    PW_BROWSER: str
+    PW_HEADLESS: bool
+    PW_TIMEOUT: int
+    RECORD_VIDEO: bool
 
     # MySQL
-    MYSQL_HOST: str = "116.118.84.136"
-    MYSQL_PORT: int = 3306
-    MYSQL_USER: str = "root"
-    MYSQL_PASSWORD: str = "Ricky@2024"
-    MYSQL_DB: str = "students"
+    MYSQL_HOST: str
+    MYSQL_PORT: int
+    MYSQL_USER: str
+    MYSQL_PASSWORD: str
+    MYSQL_DB: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
