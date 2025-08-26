@@ -6,6 +6,7 @@ from configs.db import run_query, execute
 
 @pytest.mark.ui
 @pytest.mark.auth
+@pytest.mark.smoke
 @pytest.mark.regression
 @allure.feature("Auth")
 @allure.story("Register")
