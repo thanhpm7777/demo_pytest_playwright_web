@@ -7,14 +7,14 @@ class Settings(BaseSettings):
     USER_EMAIL: str
     USER_PASSWORD: str
 
-    PW_BROWSER: str
-    PW_HEADLESS: bool
-    PW_TIMEOUT: int
-    RECORD_VIDEO: bool
+    PW_BROWSER: str = "chromium"
+    PW_HEADLESS: bool = True
+    PW_TIMEOUT: int = 10_000  # <== thêm default
+    RECORD_VIDEO: bool = False
 
     # MySQL
     MYSQL_HOST: str
-    MYSQL_PORT: int
+    MYSQL_PORT: int = 3306
     MYSQL_USER: str
     MYSQL_PASSWORD: str
     MYSQL_DB: str

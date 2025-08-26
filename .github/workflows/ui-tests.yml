@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    # MySQL service cho CI (dùng khi bạn KHÔNG đặt secrets DB)
+    # MySQL service (dùng khi KHÔNG đặt secrets DB)
     services:
       mysql:
         image: mysql:8.0
@@ -32,7 +32,6 @@ jobs:
           MYSQL_PASSWORD: apppass
         ports:
           - 3306:3306
-        # Để container ổn định trước khi chạy
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=5s
@@ -53,7 +52,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # python -m pip install playwright pytest-playwright allure-pytest  # nếu cần
 
       - name: Install Playwright browsers (Python)
         run: python -m playwright install --with-deps chromium
@@ -68,9 +66,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mysql-client
 
-      # Thiết lập biến DB: nếu có secrets thì dùng secrets; nếu không có, dùng service mặc định
+      # Ưu tiên dùng GitHub Secrets; nếu chưa khai, fallback về service MySQL ở trên
       - name: Export DB env (prefer GitHub Secrets)
-        id: dbenv
         run: |
           echo "MYSQL_HOST=${{ secrets.MYSQL_HOST || '127.0.0.1' }}" >> $GITHUB_ENV
           echo "MYSQL_PORT=${{ secrets.MYSQL_PORT || '3306' }}" >> $GITHUB_ENV
@@ -88,7 +85,7 @@ jobs:
             sleep 2
           done
 
-      # Tuỳ chọn: init schema nếu bạn có file db/schema.sql
+      # (Tuỳ chọn) Init schema nếu có db/schema.sql trong repo
       - name: Init DB schema (optional)
         run: |
           if [ -f db/schema.sql ]; then
@@ -101,13 +98,15 @@ jobs:
 
       - name: Run tests (pytest + Allure results)
         env:
+          # App/Playwright env — có default ở Settings nhưng set rõ để CI ổn định
           BASE_URL: ${{ secrets.BASE_URL }}
           USER_EMAIL: ${{ secrets.USER_EMAIL }}
           USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
           PW_HEADLESS: 'true'
           PW_BROWSER: 'chromium'
-          # PW_TIMEOUT: '10000'
-          # DB env đã export ở bước 'Export DB env', pydantic sẽ đọc qua os.environ
+          PW_TIMEOUT: '10000'
+          RECORD_VIDEO: 'false'
+          # DB env: đã có trong $GITHUB_ENV từ bước Export DB env
         run: |
           pytest -m smoke --alluredir=allure-results --tb=short -v
 
