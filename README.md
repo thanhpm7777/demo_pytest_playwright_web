@@ -21,3 +21,9 @@ allure serve ./allure-results
 ## 4) Lưu session (tùy chọn)
 # Khi cần tạo storage_state:
 pytest -k test_login_valid -q
+
+# cach mo file report download ve
+1.Mở PowerShell, chạy:
+cd "D:\Automation 2025\allure-report-html (3)"
+python -m http.server 8000
+http://localhost:8000

@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     PW_TIMEOUT: int = 10_000
     RECORD_VIDEO: bool = False
 
+    # MySQL
+    MYSQL_HOST: str = "116.118.84.136"
+    MYSQL_PORT: int = 3306
+    MYSQL_USER: str = "root"
+    MYSQL_PASSWORD: str = "Ricky@2024"
+    MYSQL_DB: str = "students"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

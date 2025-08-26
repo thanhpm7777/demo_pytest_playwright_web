@@ -5,6 +5,8 @@ import pytest
 import allure
 from playwright.sync_api import Playwright, sync_playwright
 from configs.settings import settings
+import pytest
+from configs.db import get_mysql_engine
 
 # ----- Test data -----
 @pytest.fixture(scope="session")
@@ -96,3 +98,11 @@ def context_with_auth(browser, session_storage):
     ctx.set_default_timeout(settings.PW_TIMEOUT)
     yield ctx
     ctx.close()
+
+
+
+
+@pytest.fixture(scope="session")
+def db_engine():
+    """MySQL Engine dùng chung cho toàn bộ test session."""
+    return get_mysql_engine()

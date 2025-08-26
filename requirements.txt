@@ -4,3 +4,6 @@ playwright>=1.46
 allure-pytest==2.13.5
 python-dotenv==1.0.1
 pydantic-settings==2.3.4
+pymysql
+psycopg2-binary
+sqlalchemy
