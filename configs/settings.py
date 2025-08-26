@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     USER_PASSWORD: str = ""
 
     PW_BROWSER: str = "chromium"
-    PW_HEADLESS: bool = True
+    PW_HEADLESS: bool = False
     PW_TIMEOUT: int = 10_000
     RECORD_VIDEO: bool = False
 

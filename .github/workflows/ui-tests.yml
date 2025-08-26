@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: "0 2 * * 5"   # 9h sáng thứ 6 (giờ VN)
+    - cron: "0 2 * * 5"   # 09:00 thứ 6 (UTC+7)
 
 permissions:
   contents: read
@@ -23,25 +23,39 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # (Tùy bạn: nếu requirements chưa có, cài thêm)
+          # python -m pip install playwright pytest-playwright allure-pytest
+
       - name: Install Playwright browsers (Python)
         run: python -m playwright install --with-deps chromium
+
+      - name: Prepare artifact folders
+        run: |
+          mkdir -p allure-results
+          mkdir -p test-results screenshots videos
+
       - name: Run tests (pytest + Allure results)
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           USER_EMAIL: ${{ secrets.USER_EMAIL }}
           USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-          HEADLESS: 'true'
-          BROWSER: 'chromium'
-        run: pytest -m smoke --alluredir=allure-results --tb=short -v
+          PW_HEADLESS: 'true'      # Đồng bộ với Settings(PW_HEADLESS)
+          PW_BROWSER: 'chromium'   # Đồng bộ với Settings(PW_BROWSER)
+          # PW_TIMEOUT: '10000'    # Bật nếu Settings đọc biến này
+        run: |
+          pytest -m smoke --alluredir=allure-results --tb=short -v
+
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -53,13 +67,14 @@ jobs:
             videos/
           if-no-files-found: ignore
           retention-days: 14
+
       - name: Upload Allure results (raw)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
   report:
@@ -72,20 +87,25 @@ jobs:
         with:
           name: allure-results
           path: allure-results
-      - name: Setup Java (Allure CLI)
+
+      - name: Setup Java (for Allure CLI)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Install Allure CLI
         run: npm i -g allure-commandline@2.24.1
+
       - name: Generate Allure HTML report
         run: |
+          ls -l allure-results || true
           allure generate allure-results -o allure-report --clean
           echo "# Test Report" > allure-report/README.md
-          echo "Generated: $(date)" >> allure-report/README.md
+          echo "Generated: $(date -u)" >> allure-report/README.md
           echo "Workflow: ${{ github.workflow }}" >> allure-report/README.md
           echo "Run ID: ${{ github.run_id }}" >> allure-report/README.md
+
       - name: Upload Allure HTML (artifact)
         uses: actions/upload-artifact@v4
         with:
