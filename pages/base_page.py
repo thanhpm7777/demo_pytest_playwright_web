@@ -66,7 +66,7 @@ class BasePage:
         return self.page.get_by_placeholder(placeholder)
 
     def get_by_label(self, label: str, exact: bool = True) -> Locator:
-        return self.page.get_by_label(label=label, exact=exact)
+        return self.page.get_by_label(label, exact=exact)
 
     def get_by_testid(self, testid: str) -> Locator:
         # Quy ước data-testid chuẩn công ty
@@ -242,3 +242,59 @@ class BasePage:
     def click_testid(self, testid: str, expect_nav: bool = False):
         loc = self.get_by_testid(testid)
         self._click(loc.first, expect_nav=expect_nav)
+
+    def fill_ckeditor_iframe(
+            self,
+            iframe_selector: str,  # ✅ chỉ nhận str
+            content: str,
+            *,
+            clear: bool = True,
+            use_type: bool = False,
+            timeout: float = 10_000,
+    ):
+        if not isinstance(iframe_selector, str):
+            raise TypeError("fill_ckeditor_iframe chỉ nhận CSS selector (str).")
+
+        # Đợi iframe có mặt
+        self._wait_visible(self.page.locator(iframe_selector), timeout=timeout)
+
+        # Lấy frame bằng selector (bắt buộc là str)
+        frame = self.page.frame_locator(iframe_selector)
+
+        body = frame.locator("body")
+        self._wait_visible(body, timeout=timeout)
+
+        if clear:
+            body.click()
+            self.page.keyboard.press("Control+A")
+            self.page.keyboard.press("Delete")
+
+        if use_type:
+            body.click()
+            self.page.keyboard.type(content)
+        else:
+            body.fill(content)
+
+    def fill_textarea(self, textarea_locator: Union[str, Locator], text: str):
+        """
+        Nhập dữ liệu vào textarea.
+        - textarea_locator: CSS selector hoặc Locator
+        - text: chuỗi cần nhập
+        """
+        loc = self.page.locator(textarea_locator) if isinstance(textarea_locator, str) else textarea_locator
+        loc.fill(text)  # xóa hết rồi nhập mới
+        return self
+
+    def set_checkbox(self, checkbox_locator: Union[str, Locator], state: bool = True):
+        """
+        Bật/tắt checkbox.
+        - checkbox_locator: CSS selector hoặc Locator
+        - state=True  -> check (tích)
+        - state=False -> uncheck (bỏ tích)
+        """
+        loc = self.page.locator(checkbox_locator) if isinstance(checkbox_locator, str) else checkbox_locator
+        if state:
+            loc.check()
+        else:
+            loc.uncheck()
+        return self

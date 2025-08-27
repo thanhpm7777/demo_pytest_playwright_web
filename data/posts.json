@@ -1,4 +1,13 @@
 {
-  "valid": { "title": "Hello World", "content": "This is my first post." },
-  "update": { "new_title": "Updated Title" }
+  "valid": {
+    "title": "Hello World",
+    "the_loai": "Bài giảng 10",
+    "content": "xin chào nhé",
+    "pdf_driver": "1111",
+    "path_file": "tests/resources/banner.jpg",
+    "tag": "bai viet hay nhat"
+  },
+  "update": {
+    "new_title": "Updated Title"
+  }
 }

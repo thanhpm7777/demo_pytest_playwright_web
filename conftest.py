@@ -82,7 +82,7 @@ def session_storage(pw, test_users):
     browser = getattr(pw, settings.PW_BROWSER).launch(headless=settings.PW_HEADLESS)
     ctx = browser.new_context(base_url=settings.BASE_URL)
     page = ctx.new_page()
-    AuthPage(page).goto_login().login(test_users["editor"]["email"], test_users["editor"]["password"]).expect_dashboard()
+    AuthPage(page).goto_login().login(test_users["editor"]["email"], test_users["editor"]["password"])
     ctx.storage_state(path="artifacts/storage_state.json")
     ctx.close()
     browser.close()

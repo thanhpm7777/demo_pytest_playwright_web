@@ -17,11 +17,13 @@ def get_mysql_engine() -> Engine:
     )
     return create_engine(url, pool_pre_ping=True, future=True)
 
+
 def run_query(query: str, params: Optional[Dict] = None) -> List[Dict]:
     engine = get_mysql_engine()
     with engine.connect() as conn:
         res = conn.execute(text(query), params or {})
         return [dict(row._mapping) for row in res]
+
 
 def execute(query: str, params: Optional[Dict] = None) -> int:
     engine = get_mysql_engine()

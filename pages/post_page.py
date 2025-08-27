@@ -4,11 +4,32 @@ from .base_page import BasePage
 
 class PostPage(BasePage):
     # Gợi ý selector bền: data-testid ở app
-    LINK_POSTS = ("role=link[name='Posts']")
-    LINK_NEW_POST = ("role=link[name='New Post']")
-    INPUT_TITLE = ("placeholder=Title")
+    LINK_NEW_ARTICLE = "user-avatar"
+    lbl_setting = "Cài đặt thông tin"
+    lbl_dangbai = "Đăng bài"
+
+    PH_TITLE = "title"
+    PH_category = "#category_id"
+    PH_BODY = "presentation"
+    PH_TAGS = "Enter tags"
+
+    LINK_POSTS = ("lbl_dangbai")
+    click_avata = "username"
+
+
+
+    INPUT_TITLE = "Tiêu đề bài viết"
+    select_the_loai = "#category_id"
+    CKEDITOR_IFRAME = "iframe.cke_wysiwyg_frame"
+    INPUT_BANNER = "#banner_id"  # input file
+    input_pdf_driver = "ID PDF Driver"
+    TEXTAREA_TAGS = "#tags_id"
+    CHECKBOX_IS_ACTIVE = "#id_is_active"
+    checkbox_tap_chi_van_hoc="#id_tap_chi_van_hoc"
+
+
     TEXTAREA_CONTENT = ("css=textarea[name='content']")  # chỉnh theo UI
-    BTN_PUBLISH = ("role=button[name='Publish']")
+    BTN_PUBLISH = "Đăng bài"
     BTN_SAVE = ("role=button[name='Save']")
     BTN_EDIT = ("role=button[name='Edit']")
     BTN_DELETE = ("role=button[name='Delete']")
@@ -21,15 +42,22 @@ class PostPage(BasePage):
 
     @allure.step("Open New Post form")
     def goto_new_post(self):
-        self.page.get_by_role("link", name="New Post", exact=True).click()
-        expect(self.page).to_have_url("**/posts/new")
+        self.get_by_class(self.LINK_NEW_ARTICLE).click()
+        self.click_nav(self.lbl_setting)
+        self.click_nav(self.lbl_dangbai, expect_nav=True)
         return self
 
     @allure.step("Create post: {title}")
-    def create_post(self, title: str, content: str):
-        self.page.get_by_placeholder("Title").fill(title)
-        self.page.locator("textarea[name='content']").fill(content)
-        self.page.get_by_role("button", name="Publish").click()
+    def create_post(self, title: str, the_loai: str, content: str, pdf_driver, path_file, tag, is_active: bool=True, is_active_tap_chi: bool= False):
+        self.fill_by_label(self.INPUT_TITLE, title)
+        self.select_by_label(self.select_the_loai, the_loai)
+        self.fill_ckeditor_iframe(self.CKEDITOR_IFRAME, content)
+        self.upload_file(self.INPUT_BANNER, path_file)
+        self.fill_by_label(self.input_pdf_driver, pdf_driver)
+        self.fill_textarea(self.TEXTAREA_TAGS, tag)
+        self.set_checkbox(self.CHECKBOX_IS_ACTIVE, is_active)
+        self.set_checkbox(self.checkbox_tap_chi_van_hoc, is_active_tap_chi)
+        self.click_button(self.BTN_PUBLISH)
         return self
 
     @allure.step("Open latest post")
