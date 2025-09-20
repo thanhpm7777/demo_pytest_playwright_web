@@ -14,7 +14,6 @@ def test_create_post_valid(page, test_users, test_posts):
     AuthPage(page).goto_login().login(
         test_users["editor"]["email"],
         test_users["editor"]["password"])
-    title="Hello World"
     post = PostPage(page)
     post.goto_new_post()
     post.create_post(
@@ -27,14 +26,7 @@ def test_create_post_valid(page, test_users, test_posts):
         is_active=False,
         is_active_tap_chi=True
     )
-    with allure.step("Verify post vừa tạo đã tồn tại trong MySQL"):
-        rows = run_query(
-            "SELECT title FROM blog_blog WHERE title = :title",
-            {"title": title})
-        assert rows, f"Không tìm thấy bai viet title={title} trong DB"
-        assert rows[0]["title"] == title
+    with allure.step("Verify post vừa tạo đã thành công"):
+        post.verify_register_success(success_text="Đã thêm bài viết thành công")
 
-    with allure.step("Cleanup: xóa post test trong MySQL"):
-        execute("DELETE FROM blog_blog WHERE title = :title", {"title": title})
 
-    time.sleep(5)

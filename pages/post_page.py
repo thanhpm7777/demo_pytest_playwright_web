@@ -1,3 +1,5 @@
+import time
+
 import allure
 from playwright.sync_api import expect
 from .base_page import BasePage
@@ -7,7 +9,9 @@ class PostPage(BasePage):
     LINK_NEW_ARTICLE = "user-avatar"
     lbl_setting = "Cài đặt thông tin"
     lbl_dangbai = "Đăng bài"
+    lbl_myblog="Blog của tôi"
 
+    btn_delete ="Xóa"
     PH_TITLE = "title"
     PH_category = "#category_id"
     PH_BODY = "presentation"
@@ -16,7 +20,7 @@ class PostPage(BasePage):
     LINK_POSTS = ("lbl_dangbai")
     click_avata = "username"
 
-
+    lbl_notification = ".alert.alert-success"
 
     INPUT_TITLE = "Tiêu đề bài viết"
     select_the_loai = "#category_id"
@@ -47,6 +51,12 @@ class PostPage(BasePage):
         self.click_nav(self.lbl_dangbai, expect_nav=True)
         return self
 
+    @allure.step("delete post")
+    def goto_delete_post(self):
+        self.get_by_class(self.LINK_NEW_ARTICLE).click()
+        self.click_nav(self.lbl_setting)
+        return self
+
     @allure.step("Create post: {title}")
     def create_post(self, title: str, the_loai: str, content: str, pdf_driver, path_file, tag, is_active: bool=True, is_active_tap_chi: bool= False):
         self.fill_by_label(self.INPUT_TITLE, title)
@@ -62,9 +72,11 @@ class PostPage(BasePage):
 
     @allure.step("Open latest post")
     def open_latest_post(self):
-        self.page.get_by_role("link", name="Posts", exact=True).click()
-        self.page.locator("article.post-card").first.get_by_role("link").click()
-        expect(self.page).to_have_url("**/posts/*")
+        self.get_by_class(self.LINK_NEW_ARTICLE).click()
+        self.click_nav(self.lbl_setting)
+        self.click_nav(self.lbl_myblog)
+        self.page.get_by_role("link", name="Xóa").first.click()
+
         return self
 
     @allure.step("Update post")
@@ -79,7 +91,6 @@ class PostPage(BasePage):
 
     @allure.step("Delete post")
     def delete_post(self):
-        self.page.get_by_role("button", name="Delete").click()
         self.page.get_by_role("button", name="Confirm").click()
         return self
 
@@ -96,3 +107,9 @@ class PostPage(BasePage):
             return self.page.locator("input.share-link").input_value()
         # C2: app copy vào clipboard -> lấy từ navigator (nếu app hỗ trợ)
         return self.page.evaluate("navigator.clipboard.readText && navigator.clipboard.readText()") or ""
+
+
+    def verify_register_success(self, success_text: str):
+
+        self.expect_text(self.lbl_notification, success_text)
+        return self

@@ -1,4 +1,3 @@
-cat > .dockerignore <<'EOF'
 .git
 .github
 allure-results
@@ -11,4 +10,3 @@ __pycache__/
 *.pyo
 .cache
 .env
-EOF

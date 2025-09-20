@@ -11,9 +11,10 @@ on:
 
 permissions:
   contents: read
+  packages: write   # nếu bạn muốn push image lên GHCR ở job "docker" phía dưới
 
 concurrency:
-  group: ci-web-e2e-${{ github.ref }}
+  group: ci-web-e2e-${{ github.ref }}e
   cancel-in-progress: true
 
 jobs:
@@ -21,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    # MySQL service (dùng khi KHÔNG đặt secrets DB)
     services:
       mysql:
         image: mysql:8.0
@@ -42,85 +42,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      # Build image từ Dockerfile (không push)
+      - name: Build test image
+        uses: docker/build-push-action@v6
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ui-tests:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install dependencies
+      # Chạy tests bên trong container
+      # Lưu ý: dùng --network host để container truy cập service MySQL qua 127.0.0.1:3306
+      - name: Run tests (Docker)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Install Playwright browsers (Python)
-        run: python -m playwright install --with-deps chromium
-
-      - name: Prepare artifact folders
-        run: |
-          mkdir -p allure-results
-          mkdir -p test-results screenshots videos
-
-      - name: Install MySQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mysql-client
-
-      # Ưu tiên dùng GitHub Secrets; nếu chưa khai, fallback về service MySQL ở trên
-      - name: Export DB env (prefer GitHub Secrets)
-        run: |
-          echo "MYSQL_HOST=${{ secrets.MYSQL_HOST || '127.0.0.1' }}" >> $GITHUB_ENV
-          echo "MYSQL_PORT=${{ secrets.MYSQL_PORT || '3306' }}" >> $GITHUB_ENV
-          echo "MYSQL_USER=${{ secrets.MYSQL_USER || 'appuser' }}" >> $GITHUB_ENV
-          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD || 'apppass' }}" >> $GITHUB_ENV
-          echo "MYSQL_DB=${{ secrets.MYSQL_DB || 'appdb' }}" >> $GITHUB_ENV
-
-      - name: Wait for MySQL
-        run: |
-          for i in {1..60}; do
-            mysqladmin ping \
-              -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-              -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent && break
-            echo "Waiting for MySQL ($i/60)..."
-            sleep 2
-          done
-
-      # (Tuỳ chọn) Init schema nếu có db/schema.sql trong repo
-      - name: Init DB schema (optional)
-        run: |
-          if [ -f db/schema.sql ]; then
-            echo "Found db/schema.sql -> initializing..."
-            mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" \
-              -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DB" < db/schema.sql
-          else
-            echo "No db/schema.sql, skip init."
-          fi
-
-      - name: Run tests (pytest + Allure results)
-        env:
-          # App/Playwright env — có default ở Settings nhưng set rõ để CI ổn định
-          BASE_URL: ${{ secrets.BASE_URL }}
-          USER_EMAIL: ${{ secrets.USER_EMAIL }}
-          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-          PW_HEADLESS: 'true'
-          PW_BROWSER: 'chromium'
-          PW_TIMEOUT: '10000'
-          RECORD_VIDEO: 'false'
-          # DB env: đã có trong $GITHUB_ENV từ bước Export DB env
-        run: |
-          pytest -m smoke --alluredir=allure-results --tb=short -v
-
-      - name: Upload failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-failure-artifacts
-          path: |
-            test-results/
-            screenshots/
-            videos/
-          if-no-files-found: ignore
-          retention-days: 14
+          mkdir -p allure-results screenshots videos
+          docker run --rm \
+            --network host \
+            -e BASE_URL='${{ secrets.BASE_URL }}' \
+            -e USER_EMAIL='${{ secrets.USER_EMAIL }}' \
+            -e USER_PASSWORD='${{ secrets.USER_PASSWORD }}' \
+            -e MYSQL_HOST='127.0.0.1' \
+            -e MYSQL_PORT='3306' \
+            -e MYSQL_USER='appuser' \
+            -e MYSQL_PASSWORD='apppass' \
+            -e MYSQL_DB='appdb' \
+            -v "$PWD/allure-results:/app/allure-results" \
+            -v "$PWD/screenshots:/app/screenshots" \
+            -v "$PWD/videos:/app/videos" \
+            ui-tests:ci
 
       - name: Upload Allure results (raw)
         if: always()
@@ -181,3 +132,35 @@ jobs:
         if: needs.test.result == 'success'
         run: |
           echo "::notice title=E2E Tests Passed::All tests passed. Download 'allure-report-html' artifact in this run to view the report."
+
+  # (Tuỳ chọn) Build & Push image lên GHCR sau khi test PASS trên main
+  docker:
+    name: Build & Push Docker image (GHCR)
+    needs: test
+    runs-on: ubuntu-latest
+    if: needs.test.result == 'success' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/ui-tests
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

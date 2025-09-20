@@ -1,3 +1,5 @@
+import time
+
 import allure
 from playwright.sync_api import expect
 from .base_page import BasePage
@@ -20,6 +22,7 @@ class AuthPage(BasePage):
     RG_confirm_password = "Xác nhận mật khẩu"
     BTN_register = "ĐĂNG KÝ"
     link_register ="Đăng ký tài khoản"
+    lbl_notification =".alert.alert-success"
 
     @allure.step("Goto Login")
     def goto_login(self):
@@ -62,4 +65,17 @@ class AuthPage(BasePage):
         self.fill_by_name(self.RG_password, password)
         self.fill_by_placeholder(self.RG_confirm_password, confirm_pass)
         self.click_button(self.BTN_register)
+        return self
+
+    def is_register_success(self) -> bool:
+        """Kiểm tra đăng ký thành công: có thông báo thành công hoặc chuyển trang."""
+        try:
+            # Kiểm tra thông báo thành công
+            return self.page.locator(".alert-success, .toast-success").is_visible()
+        except:
+            return False
+
+    def verify_register_success(self, success_text: str):
+
+        self.expect_text(self.lbl_notification, success_text)
         return self

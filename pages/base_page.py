@@ -298,3 +298,11 @@ class BasePage:
         else:
             loc.uncheck()
         return self
+
+    def expect_visible(self, selector: str, timeout: int = 5000):
+        expect(self.page.locator(selector)).to_be_visible(timeout=timeout)
+        return self
+
+    def expect_text(self, selector: str, text: str, timeout: int = 5000):
+        expect(self.page.locator(selector)).to_contain_text(text, timeout=timeout)
+        return self

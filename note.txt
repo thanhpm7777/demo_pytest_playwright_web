@@ -1,1 +1,3 @@
-Sau khi cài, nhớ: python -m playwright install --with-deps chromium
+docker
+docker compose build tests
+docker compose run --rm tests pytest -n auto --alluredir=/app/reports/allure-results
