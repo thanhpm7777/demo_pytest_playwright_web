@@ -6,7 +6,7 @@ from pages.auth_page import AuthPage
 from utils.generators import generate_unique_user
 @pytest.mark.ui
 @pytest.mark.auth
-@pytest.mark.regression
+@pytest.mark.smoke
 @allure.feature("Auth")
 @allure.story("Register")
 

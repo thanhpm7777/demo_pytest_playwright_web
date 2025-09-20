@@ -7,6 +7,7 @@ from pages.auth_page import AuthPage
 from configs.db import run_query, execute
 @pytest.mark.ui
 @pytest.mark.post
+@pytest.mark.smoke
 @allure.feature("Post")
 @allure.story("Create")
 def test_create_post_valid(page, test_users, test_posts):
