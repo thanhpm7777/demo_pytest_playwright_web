@@ -11,10 +11,10 @@ on:
 
 permissions:
   contents: read
-  packages: write   # nếu bạn muốn push image lên GHCR ở job "docker" phía dưới
+  packages: write   # cần nếu dùng job "docker" để push GHCR
 
 concurrency:
-  group: ci-web-e2e-${{ github.ref }}e
+  group: ci-web-e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -42,44 +42,59 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Buildx driver docker-container (để dùng cache gha và load image)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           install: true
           driver: docker-container
-          driver-opts: |
-            image=moby/buildkit:latest
 
-      # Build image từ Dockerfile (không push)
-      - name: Build test image
+      # Build image từ Dockerfile và LOAD vào Docker daemon (để docker run thấy tag ui-tests:ci)
+      - name: Build test image (and load to daemon)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: false
           tags: ui-tests:ci
+          load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Chạy tests bên trong container
-      # Lưu ý: dùng --network host để container truy cập service MySQL qua 127.0.0.1:3306
+      # Chạy tests bên trong container; dùng --network host để truy cập MySQL service (127.0.0.1:3306)
       - name: Run tests (Docker)
         run: |
-          mkdir -p allure-results screenshots videos
+          mkdir -p allure-results screenshots videos test-results
           docker run --rm \
             --network host \
             -e BASE_URL='${{ secrets.BASE_URL }}' \
             -e USER_EMAIL='${{ secrets.USER_EMAIL }}' \
             -e USER_PASSWORD='${{ secrets.USER_PASSWORD }}' \
+            -e PW_HEADLESS='true' \
+            -e PW_BROWSER='chromium' \
+            -e PW_TIMEOUT='10000' \
+            -e RECORD_VIDEO='false' \
             -e MYSQL_HOST='127.0.0.1' \
             -e MYSQL_PORT='3306' \
             -e MYSQL_USER='appuser' \
             -e MYSQL_PASSWORD='apppass' \
             -e MYSQL_DB='appdb' \
             -v "$PWD/allure-results:/app/allure-results" \
+            -v "$PWD/test-results:/app/test-results" \
             -v "$PWD/screenshots:/app/screenshots" \
             -v "$PWD/videos:/app/videos" \
             ui-tests:ci
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure-artifacts
+          path: |
+            test-results/
+            screenshots/
+            videos/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload Allure results (raw)
         if: always()
@@ -141,7 +156,7 @@ jobs:
         run: |
           echo "::notice title=E2E Tests Passed::All tests passed. Download 'allure-report-html' artifact in this run to view the report."
 
-  # (Tuỳ chọn) Build & Push image lên GHCR sau khi test PASS trên main
+  # Tuỳ chọn: Build & Push image lên GHCR khi test PASS trên main
   docker:
     name: Build & Push Docker image (GHCR)
     needs: test
@@ -149,13 +164,19 @@ jobs:
     if: needs.test.result == 'success' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver: docker-container
+      - name: Login GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - id: meta
+      - name: Docker metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}/ui-tests
@@ -163,7 +184,8 @@ jobs:
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
-      - uses: docker/build-push-action@v6
+      - name: Build & Push
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
