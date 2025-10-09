@@ -2,8 +2,6 @@ docker
 docker compose build tests
 docker compose run --rm tests pytest -n auto --alluredir=/app/reports/allure-results
 
-
-
 xem allure report tai local
 cd C:\Users\thanh\Downloads\allure-report
 python -m http.server 5500

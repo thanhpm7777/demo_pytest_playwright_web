@@ -23,6 +23,7 @@ class PostPage(BasePage):
     lbl_notification = ".alert.alert-success"
 
     INPUT_TITLE = "Tiêu đề bài viết"
+
     select_the_loai = "#category_id"
     CKEDITOR_IFRAME = "iframe.cke_wysiwyg_frame"
     INPUT_BANNER = "#banner_id"  # input file
@@ -30,10 +31,10 @@ class PostPage(BasePage):
     TEXTAREA_TAGS = "#tags_id"
     CHECKBOX_IS_ACTIVE = "#id_is_active"
     checkbox_tap_chi_van_hoc="#id_tap_chi_van_hoc"
-
-
-    TEXTAREA_CONTENT = ("css=textarea[name='content']")  # chỉnh theo UI
     BTN_PUBLISH = "Đăng bài"
+    BTN_UPDATE = "Cập nhật"
+    TEXTAREA_CONTENT = ("css=textarea[name='content']")  # chỉnh theo UI
+
     BTN_SAVE = ("role=button[name='Save']")
     BTN_EDIT = ("role=button[name='Edit']")
     BTN_DELETE = ("role=button[name='Delete']")
@@ -75,23 +76,20 @@ class PostPage(BasePage):
         self.get_by_class(self.LINK_NEW_ARTICLE).click()
         self.click_nav(self.lbl_setting)
         self.click_nav(self.lbl_myblog)
-        self.page.get_by_role("link", name="Xóa").first.click()
 
         return self
 
     @allure.step("Update post")
-    def update_post(self, new_title: str | None = None, new_content: str | None = None):
-        self.page.get_by_role("button", name="Edit").click()
-        if new_title:
-            self.page.get_by_placeholder("Title").fill(new_title)
-        if new_content:
-            self.page.locator("textarea[name='content']").fill(new_content)
-        self.page.get_by_role("button", name="Save").click()
+    def update_post(self, title):
+        self.click_link_or_button("Sửa")
+        self.fill_by_label(self.INPUT_TITLE, title)
+        self.click_link_or_button(self.BTN_UPDATE)
         return self
 
     @allure.step("Delete post")
     def delete_post(self):
-        self.page.get_by_role("button", name="Confirm").click()
+        loc = self.page.get_by_role("link", name="Xóa").first
+        self._click(loc, expect_nav=True)  # expect_nav=True nếu click dẫn tới điều hướng
         return self
 
     @allure.step("Toggle like")
@@ -108,8 +106,7 @@ class PostPage(BasePage):
         # C2: app copy vào clipboard -> lấy từ navigator (nếu app hỗ trợ)
         return self.page.evaluate("navigator.clipboard.readText && navigator.clipboard.readText()") or ""
 
-
-    def verify_register_success(self, success_text: str):
+    def verify_create_success(self, success_text: str):
 
         self.expect_text(self.lbl_notification, success_text)
         return self

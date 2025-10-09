@@ -23,6 +23,7 @@ class AuthPage(BasePage):
     BTN_register = "ĐĂNG KÝ"
     link_register ="Đăng ký tài khoản"
     lbl_notification =".alert.alert-success"
+    register_fail_text ="#id_username_error"
 
     @allure.step("Goto Login")
     def goto_login(self):
@@ -78,4 +79,9 @@ class AuthPage(BasePage):
     def verify_register_success(self, success_text: str):
 
         self.expect_text(self.lbl_notification, success_text)
+        return self
+
+    def verify_register_fail(self, fail_text: str):
+
+        self.expect_text(self.register_fail_text, fail_text)
         return self

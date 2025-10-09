@@ -26,3 +26,23 @@ def test_register_valid(page):
 
 
 
+@pytest.mark.ui
+@pytest.mark.auth
+@pytest.mark.regression
+@allure.feature("Auth")
+@allure.story("Register - Fail")
+def test_register_fail_username(page):
+    auth = AuthPage(page)
+
+    # Dùng email đã tồn tại
+    username = "thanhpm"
+    email = "thanhpm73@gmail.com.com"
+
+    with allure.step("Đi tới trang đăng ký"):
+        auth.goto_register()
+
+    with allure.step("Điền form với email đã tồn tại và submit"):
+        auth.register(username=username, email=email, password="123456", confirm_pass="123456")
+
+    with allure.step("Xác thực thông báo lỗi hiển thị đúng"):
+        auth.verify_register_fail(fail_text="Tên đăng nhập đã tồn tại")

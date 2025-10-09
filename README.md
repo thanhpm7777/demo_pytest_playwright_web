@@ -13,6 +13,8 @@ cp .env.example .env  # sửa BASE_URL, USER_*
 ## 2) Chạy smoke / regression
 pytest -m "smoke and ui"
 pytest -m "regression and ui" -n auto  # parallel
+pytest -m tests/auth/test_login.py -vv
+
 
 ## 3) Allure report
 # Cài allure commandline: (Mac brew / Win scoop / choco)
@@ -20,6 +22,7 @@ allure serve ./allure-results
 
 ## 4) Lưu session (tùy chọn)
 # Khi cần tạo storage_state:
+ pytest tests/auth/test_login.py -vv
 pytest -k test_login_valid -q
 
 # cach mo file report download ve

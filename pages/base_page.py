@@ -7,11 +7,12 @@ from typing import Optional, Union
 
 from playwright.sync_api import Page, Locator, expect
 from configs.settings import settings
-
+from playwright.sync_api import sync_playwright
 
 class BasePage:
 
     def __init__(self, page: Page):
+
         self.page: Page = page
         self.page.set_default_timeout(settings.PW_TIMEOUT)
 
@@ -167,6 +168,14 @@ class BasePage:
 
     def fill_by_label(self, label: str, value: str, exact: bool = True, clear: bool = True):
         field = self.get_by_label(label, exact=exact)
+        self._wait_visible(field)
+        if clear:
+            field.fill(value)
+        else:
+            field.type(value)
+
+    def fill_by_id(self, label: str, value: str, clear: bool = True) -> None:
+        field = self.get_by_id(label)
         self._wait_visible(field)
         if clear:
             field.fill(value)

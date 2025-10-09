@@ -100,8 +100,6 @@ def context_with_auth(browser, session_storage):
     ctx.close()
 
 
-
-
 @pytest.fixture(scope="session")
 def db_engine():
     """MySQL Engine dùng chung cho toàn bộ test session."""
