@@ -2,7 +2,7 @@ import pytest
 import allure
 from pages.post_page import PostPage
 from pages.auth_page import AuthPage
-
+from utils.generators import generate_unique_user, generate_unique_title
 @allure.feature("Post")
 class TestPost:
     @pytest.mark.ui
@@ -16,8 +16,9 @@ class TestPost:
         )
         post = PostPage(page)
         post.goto_new_post()
+        title = generate_unique_title()
         post.create_post(
-            title=test_posts["valid"]["title"],
+            title=title,
             the_loai=test_posts["valid"]["the_loai"],
             content=test_posts["valid"]["content"],
             pdf_driver=test_posts["valid"]["pdf_driver"],

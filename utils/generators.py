@@ -11,4 +11,9 @@ def generate_unique_user(prefix="user"):
 
     username = f"{prefix}_{rand}_{timestamp}"
     email = f"{username}@example.com"
+
     return username, email
+
+
+def generate_unique_title(prefix="Bài viết"):
+    return f"{prefix} {int(time.time())}"
