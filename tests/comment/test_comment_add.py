@@ -8,6 +8,7 @@ class TestComment:
     @pytest.mark.ui
     @pytest.mark.post
     @pytest.mark.smoke
+    @pytest.mark.regression
     @allure.story("Create")
     def test_add_comment(self, page, test_users):
         AuthPage(page).goto_login().login(

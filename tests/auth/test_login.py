@@ -8,6 +8,7 @@ class TestLogin:
     @pytest.mark.ui
     @pytest.mark.auth
     @pytest.mark.smoke
+    @pytest.mark.regression
     @allure.story("Login")
     def test_login_valid(self, page, test_users):
         AuthPage(page).goto_login().login(

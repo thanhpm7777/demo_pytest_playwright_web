@@ -8,6 +8,7 @@ class TestPost:
     @pytest.mark.ui
     @pytest.mark.post
     @pytest.mark.smoke
+    @pytest.mark.regression
     @allure.story("Create")
     def test_create_post_valid(self, page, test_users, test_posts):
         AuthPage(page).goto_login().login(

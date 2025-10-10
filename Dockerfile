@@ -32,4 +32,4 @@ COPY . .
 RUN mkdir -p allure-results test-results screenshots videos
 
 # Lệnh mặc định (có thể override khi run)
-CMD ["pytest", "-m", "smoke", "--alluredir=allure-results", "--tb=short", "-v"]
+CMD ["pytest", "-m", "regression", "--alluredir=allure-results", "--tb=short", "-v"]
