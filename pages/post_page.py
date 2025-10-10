@@ -35,16 +35,6 @@ class PostPage(BasePage):
     BTN_UPDATE = "Cập nhật"
     TEXTAREA_CONTENT = ("css=textarea[name='content']")  # chỉnh theo UI
 
-    BTN_SAVE = ("role=button[name='Save']")
-    BTN_EDIT = ("role=button[name='Edit']")
-    BTN_DELETE = ("role=button[name='Delete']")
-    BTN_CONFIRM = ("role=button[name='Confirm']")
-    BTN_LIKE = ("role=button[name='Like']")
-    LIKE_COUNT = ("css=[data-testid='like-count']")
-    BTN_SHARE = ("role=button[name='Share']")
-    INPUT_SHARE_LINK = ("css=input.share-link")         # chỉnh theo UI
-    CARD_POST = ("css=article.post-card")
-
     @allure.step("Open New Post form")
     def goto_new_post(self):
         self.get_by_class(self.LINK_NEW_ARTICLE).click()
@@ -92,19 +82,6 @@ class PostPage(BasePage):
         self._click(loc, expect_nav=True)  # expect_nav=True nếu click dẫn tới điều hướng
         return self
 
-    @allure.step("Toggle like")
-    def like_toggle(self):
-        self.page.get_by_role("button", name="Like").click()
-        return self
-
-    @allure.step("Read share link")
-    def share_get_link(self) -> str:
-        self.page.get_by_role("button", name="Share").click()
-        # C1: có input hiển thị link
-        if self.page.locator("input.share-link").count() > 0:
-            return self.page.locator("input.share-link").input_value()
-        # C2: app copy vào clipboard -> lấy từ navigator (nếu app hỗ trợ)
-        return self.page.evaluate("navigator.clipboard.readText && navigator.clipboard.readText()") or ""
 
     def verify_create_success(self, success_text: str):
 

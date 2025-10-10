@@ -124,13 +124,6 @@ class BasePage:
         self._click(self.get_by_css(selector), expect_nav=expect_nav)
 
     def _click(self, locator: Locator, expect_nav: bool = False, retries: int = 2):
-        """
-        Click có:
-        - Đợi visible + enabled
-        - Scroll vào view
-        - Retry nhẹ khi bị overlay/animation
-        - Option expect_navigation
-        """
         self._wait_visible(locator)
         for attempt in range(retries + 1):
             try:
@@ -233,17 +226,11 @@ class BasePage:
         expect(loc).to_be_enabled(timeout=timeout or settings.PW_TIMEOUT)
 
     def wait_for_toast(self, text: str, exact: bool = False, timeout: Optional[int] = None):
-        """
-        Chờ toast/banner/thông báo có text (ví dụ div[role='alert']).
-        Tùy dự án có thể sửa selector gốc.
-        """
+
         candidate = self.page.locator("div[role='alert'], .toast, .notification")
         locator = candidate.get_by_text(text, exact=exact)
         expect(locator.first).to_be_visible(timeout=timeout or settings.PW_TIMEOUT)
 
-    # =========================
-    # Convenience shortcuts
-    # =========================
     def click_by_text(self, text: str, exact: bool = True, expect_nav: bool = False):
         loc = self.get_by_text(text, exact=exact)
         self._click(loc.first, expect_nav=expect_nav)
@@ -285,22 +272,12 @@ class BasePage:
             body.fill(content)
 
     def fill_textarea(self, textarea_locator: Union[str, Locator], text: str):
-        """
-        Nhập dữ liệu vào textarea.
-        - textarea_locator: CSS selector hoặc Locator
-        - text: chuỗi cần nhập
-        """
         loc = self.page.locator(textarea_locator) if isinstance(textarea_locator, str) else textarea_locator
         loc.fill(text)  # xóa hết rồi nhập mới
         return self
 
     def set_checkbox(self, checkbox_locator: Union[str, Locator], state: bool = True):
-        """
-        Bật/tắt checkbox.
-        - checkbox_locator: CSS selector hoặc Locator
-        - state=True  -> check (tích)
-        - state=False -> uncheck (bỏ tích)
-        """
+
         loc = self.page.locator(checkbox_locator) if isinstance(checkbox_locator, str) else checkbox_locator
         if state:
             loc.check()

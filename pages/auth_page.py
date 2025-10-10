@@ -46,10 +46,6 @@ class AuthPage(BasePage):
             self.click_button(self.BTN_SIGN_IN)
         return self
 
-    # @allure.step("Expect dashboard after login")
-    # def expect_dashboard(self):
-    #     expect(self.page).to_have_url("https://hocvancokimngan.com/")
-    #     return self
 
     def assert_logged_in(self, username):
         with allure.step("Xác minh đã đăng nhập thành công"):
@@ -68,18 +64,20 @@ class AuthPage(BasePage):
         self.click_button(self.BTN_register)
         return self
 
+
     def is_register_success(self) -> bool:
-        """Kiểm tra đăng ký thành công: có thông báo thành công hoặc chuyển trang."""
         try:
-            # Kiểm tra thông báo thành công
+
             return self.page.locator(".alert-success, .toast-success").is_visible()
         except:
             return False
+
 
     def verify_register_success(self, success_text: str):
 
         self.expect_text(self.lbl_notification, success_text)
         return self
+
 
     def verify_register_fail(self, fail_text: str):
 
