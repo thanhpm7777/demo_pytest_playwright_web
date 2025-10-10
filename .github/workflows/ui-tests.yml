@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: read
-  packages: write   # cần nếu dùng job "docker" để push GHCR
+  packages: write
 
 concurrency:
   group: ci-web-e2e-${{ github.ref }}
@@ -22,22 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: appdb
-          MYSQL_USER: appuser
-          MYSQL_PASSWORD: apppass
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
-          --health-interval=5s
-          --health-timeout=2s
-          --health-retries=10
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,14 +29,12 @@ jobs:
       - name: Print BASE_URL
         run: echo "BASE_URL=${{ secrets.BASE_URL }}"
 
-      # Buildx driver docker-container (để dùng cache gha và load image)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           install: true
           driver: docker-container
 
-      # Build image từ Dockerfile và LOAD vào Docker daemon (để docker run thấy tag ui-tests:ci)
       - name: Build test image (and load to daemon)
         uses: docker/build-push-action@v6
         with:
@@ -63,12 +45,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Chạy tests bên trong container; dùng --network host để truy cập MySQL service (127.0.0.1:3306)
+      # Kết nối trực tiếp tới VPS MySQL (không dùng services)
       - name: Run tests (Docker)
         run: |
           mkdir -p allure-results screenshots videos test-results
           docker run --rm \
-            --network host \
             -e BASE_URL='${{ secrets.BASE_URL }}' \
             -e USER_EMAIL='${{ secrets.USER_EMAIL }}' \
             -e USER_PASSWORD='${{ secrets.USER_PASSWORD }}' \
@@ -76,11 +57,11 @@ jobs:
             -e PW_BROWSER='chromium' \
             -e PW_TIMEOUT='10000' \
             -e RECORD_VIDEO='false' \
-            -e MYSQL_HOST='127.0.0.1' \
-            -e MYSQL_PORT='3306' \
-            -e MYSQL_USER='appuser' \
-            -e MYSQL_PASSWORD='apppass' \
-            -e MYSQL_DB='appdb' \
+            -e MYSQL_HOST='${{ secrets.MYSQL_HOST }}' \
+            -e MYSQL_PORT='${{ secrets.MYSQL_PORT }}' \
+            -e MYSQL_USER='${{ secrets.MYSQL_USER }}' \
+            -e MYSQL_PASSWORD='${{ secrets.MYSQL_PASSWORD }}' \
+            -e MYSQL_DB='${{ secrets.MYSQL_DB }}' \
             -v "$PWD/allure-results:/app/allure-results" \
             -v "$PWD/test-results:/app/test-results" \
             -v "$PWD/screenshots:/app/screenshots" \
@@ -159,7 +140,6 @@ jobs:
         run: |
           echo "::notice title=E2E Tests Passed::All tests passed. Download 'allure-report-html' artifact in this run to view the report."
 
-  # Tuỳ chọn: Build & Push image lên GHCR khi test PASS trên main
   docker:
     name: Build & Push Docker image (GHCR)
     needs: test
