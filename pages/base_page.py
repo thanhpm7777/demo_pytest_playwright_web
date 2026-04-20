@@ -70,7 +70,6 @@ class BasePage:
         return self.page.get_by_label(label, exact=exact)
 
     def get_by_testid(self, testid: str) -> Locator:
-        # Quy ước data-testid chuẩn công ty
         return self.page.get_by_test_id(testid)
 
     def get_by_xpath(self, xpath: str) -> Locator:
